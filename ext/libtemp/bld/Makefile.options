@@ -1,0 +1,15 @@
+include $(MAKER_ROOT)/Makefile.pre
+include $(MAKER_ROOT)/Makefile.msp
+
+ifeq ($(LIBTEMP_SENSOR),tmp36)
+LIBTEMP_REF = 1.2 # V for <= 70 degC
+LIBTEMP_SLOPE_INVERSE = 100 # 1/10mV/C to volts = 1/(10/1000)
+LIBTEMP_INTERCEPT = 0.5 # V (750mV at 25C)
+else
+$(error Unsupported temperature sensor: see LIBTEMP_SENSOR var)
+endif
+override CFLAGS += \
+	-DLIBTEMP_ADC_CONV_FACTOR=$(call calc_int,$(LIBTEMP_REF) * $(LIBTEMP_SLOPE_INVERSE)) \
+	-DLIBTEMP_ADC_CONV_OFFSET=$(call calc_int,$(LIBTEMP_INTERCEPT) * $(LIBTEMP_SLOPE_INVERSE)) \
+	-DLIBTEMP_REF_BITS=$(call volt_ref,$(LIBTEMP_REF)) \
+	-DLIBTEMP_ADC_CHAN=$(LIBTEMP_ADC_CHAN) \

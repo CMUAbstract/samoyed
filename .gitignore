@@ -1,0 +1,14 @@
+ext/jit/JitFrontend/bld/jit_frontend
+bld/jit/source.txt
+bld/jit/mem.txt
+.*.swa
+.*.swo
+.*.swp
+*.txt
+*.S
+*.o
+*.d
+*.a
+*.bc
+src/main2.c
+src/_main.c

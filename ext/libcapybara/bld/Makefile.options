@@ -1,0 +1,107 @@
+# This makefile applies the options.
+# For list of options and documentation see Makefile.config
+
+include $(MAKER_ROOT)/Makefile.msp
+include $(MAKER_ROOT)/Makefile.pre
+
+ifneq ($(LIBCAPYBARA_VARTH_ENABLED),)
+LOCAL_CFLAGS += -DLIBCAPYBARA_VARTH_ENABLED
+endif # LIBCAPYBARA_VARTH_ENABLED
+
+ifeq ($(LIBCAPYBARA_PRECHG_HANDLING),EXP)
+LOCAL_CFLAGS += -DLIBCAPYBARA_EXPLICIT_PRECHG
+endif 
+
+ifneq ($(LIBCAPYBARA_PIN_VBOOST_OK),)
+LOCAL_CFLAGS += \
+	-DLIBCAPYBARA_PORT_VBOOST_OK=$(firstword $(subst ., ,$(LIBCAPYBARA_PIN_VBOOST_OK))) \
+	-DLIBCAPYBARA_PIN_VBOOST_OK=$(lastword $(subst ., ,$(LIBCAPYBARA_PIN_VBOOST_OK)))
+else
+$(error Port and pin for VBOOST_OK signal must be defined with LIBCAPYBARA_VBOOST_OK_PIN, e.g. '2.3')
+endif
+
+ifneq ($(LIBCAPYBARA_PIN_VBANK_OK),)
+LOCAL_CFLAGS += \
+  -DLIBCAPYBARA_PORT_VBANK_OK=$(firstword $(subst ., ,$(LIBCAPYBARA_PIN_VBANK_OK))) \
+  -DLIBCAPYBARA_PIN_VBANK_OK=$(lastword $(subst ., ,$(LIBCAPYBARA_PIN_VBANK_OK))) 
+
+$(Added -DLIBCAPYBARA_PORT_VBANK_OK=$(firstword $(subst ., ,$(LIBCAPBYARA_PIN_VBANK_OK))) ) 
+else
+$(error Port and pin for VBANK_OK signal must be defined with LIBCAPYBARA_VBANK_OK_PIN, e.g. '2.3')
+endif
+
+ifneq ($(LIBCAPYBARA_VCAP_RECOVERY_TIME),)
+LOCAL_CFLAGS += $(call interval,LIBCAPYBARA_VCAP_RECOVERY_TIME,\
+			$(LIBCAPYBARA_VCAP_RECOVERY_TIME),\
+			$(call calc_int,$(CLOCK_FREQ_$(LIBMSP_SLEEP_TIMER_CLK)) / ($(LIBMSP_SLEEP_TIMER_DIV))),\
+			$(LIBMSP_SLEEP_TIMER_TICKS))
+else
+$(error Undefined config var: LIBCAPYBARA_VCAP_RECOVERY_TIME)
+endif
+
+ifneq ($(LIBCAPYBARA_PIN_BOOST_SW),)
+LOCAL_CFLAGS += \
+	-DLIBCAPYBARA_PORT_BOOST_SW=$(firstword $(subst ., ,$(LIBCAPYBARA_PIN_BOOST_SW))) \
+	-DLIBCAPYBARA_PIN_BOOST_SW=$(lastword $(subst ., ,$(LIBCAPYBARA_PIN_BOOST_SW)))
+else
+$(error Port and pin for BOOST_SW signal must be defined with LIBCAPYBARA_BOOST_SW_PIN, e.g. '2.3')
+endif
+
+ifneq ($(LIBCAPYBARA_NUM_BANKS),)
+LOCAL_CFLAGS += -DLIBCAPYBARA_NUM_BANKS=$(LIBCAPYBARA_NUM_BANKS)
+else
+$(error Number of banks not defined)
+endif # LIBCAPYBARA_NUM_BANKS
+
+ifneq ($(LIBCAPYBARA_SWITCH_DESIGN),)
+
+LOCAL_CFLAGS += -DLIBCAPYBARA_SWITCH_DESIGN__$(LIBCAPYBARA_SWITCH_DESIGN)
+LOCAL_CFLAGS += -DLIBCAPYBARA_SWITCH_CONTROL__$(LIBCAPYBARA_SWITCH_CONTROL)
+
+define port_flags
+	-D$(1)_PORT=$(firstword $(subst ., ,$(subst ., ,$(value $(1))))) \
+	-D$(1)_PIN=$(lastword $(subst ., ,$(subst ., ,$(value $(1)))))
+endef
+
+ifeq ($(LIBCAPYBARA_SWITCH_CONTROL),TWO_PIN)
+LOCAL_CFLAGS += $(call port_flags,LIBCAPYBARA_BANK_PORT_0_OPEN)
+LOCAL_CFLAGS += $(call port_flags,LIBCAPYBARA_BANK_PORT_0_CLOSE)
+LOCAL_CFLAGS += $(call port_flags,LIBCAPYBARA_BANK_PORT_1_OPEN)
+LOCAL_CFLAGS += $(call port_flags,LIBCAPYBARA_BANK_PORT_1_CLOSE)
+LOCAL_CFLAGS += $(call port_flags,LIBCAPYBARA_BANK_PORT_2_OPEN)
+LOCAL_CFLAGS += $(call port_flags,LIBCAPYBARA_BANK_PORT_2_CLOSE)
+LOCAL_CFLAGS += $(call port_flags,LIBCAPYBARA_BANK_PORT_3_OPEN)
+LOCAL_CFLAGS += $(call port_flags,LIBCAPYBARA_BANK_PORT_3_CLOSE)
+else ifeq ($(LIBCAPYBARA_SWITCH_CONTROL),ONE_PIN)
+LOCAL_CFLAGS += $(call port_flags,LIBCAPYBARA_BANK_PORT_0)
+LOCAL_CFLAGS += $(call port_flags,LIBCAPYBARA_BANK_PORT_1)
+LOCAL_CFLAGS += $(call port_flags,LIBCAPYBARA_BANK_PORT_2)
+LOCAL_CFLAGS += $(call port_flags,LIBCAPYBARA_BANK_PORT_3)
+endif # LIBCAPYBARA_SWITCH_CONTROL
+
+endif # LIBCAPYBARA_SWITCH_DESIGN
+
+ifeq ($(words $(LIBCAPYBARA_VBANK_COMP_CHAN) $(LIBCAPYBARA_VBANK_COMP_PIN)),2)
+override CFLAGS += $(call comp_chan_type,LIBCAPYBARA_VBANK_COMP,$(LIBCAPYBARA_VBANK_COMP_CHAN)) \
+				   $(call gpio_pin,LIBCAPYBARA_VBANK_COMP_PIN)
+else
+$(error Undefined variables: LIBCAPYBARA_VBANK_COMP_CHAN LIBCAPYBARA_VBANK_COMP_PIN)
+endif # LIBCAPYBARA_VBANK_COMP_CHAN
+
+ifneq ($(LIBCAPYBARA_DEEP_DISCHARGE),)
+override CFLAGS := $(CFLAGS) $(call comp_thres,LIBCAPYBARA_DEEP_DISCHARGE,$(LIBCAPYBARA_DEEP_DISCHARGE),\
+						  					   $(LIBCAPYBARA_VBANK_DIV),$(LIBCAPYBARA_VBANK_COMP_REF),$(COMP_TAPS))
+else
+$(error Undefined config variable: LIBCAPYBARA_DEEP_DISCHARGE)
+endif
+
+ifneq ($(LIBCAPYBARA_VBANK_COMP_SETTLE_MS),)
+override CFLAGS := $(CFLAGS) \
+	$(call interval,LIBCAPYBARA_VBANK_COMP_SETTLE,$(LIBCAPYBARA_VBANK_COMP_SETTLE_MS),\
+                    $(call calc_int,$(CLOCK_FREQ_$(LIBMSP_SLEEP_TIMER_CLK)) / ($(LIBMSP_SLEEP_TIMER_DIV))),\
+                    $(LIBMSP_SLEEP_TIMER_TICKS))
+else # LIBCAPYBARA_VBANK_COMP_SETTLE_MS
+$(error Unset config variable: LIBCAPYBARA_VBANK_COMP_SETTLE_MS)
+endif # LIBCAPYBARA_VBANK_COMP_SETTLE_MS
+
+override CFLAGS += $(LOCAL_CFLAGS)

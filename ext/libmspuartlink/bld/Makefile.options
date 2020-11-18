@@ -1,0 +1,36 @@
+# This file passes the config options to the compiler.
+# See Makefile.config for available options then set then in top-level app makefile
+
+include $(MAKER_ROOT)/Makefile.pre
+include $(MAKER_ROOT)/Makefile.msp
+
+ifneq ($(LIBMSPUARTLINK_UART_IDX),)
+override CFLAGS += -DLIBMSPUARTLINK_UART_IDX=$(LIBMSPUARTLINK_UART_IDX)
+else
+$(error Undefined config variable: LIBMSPUARTLINK_UART_IDX)
+endif # LIBMSPUARTLINK_UART_IDX
+
+ifneq ($(words $(LIBMSPUARTLINK_PIN_RX) $(LIBMSPUARTLINK_PIN_TX)),1)
+$(error One of these config variables needs to be defined: LIBMSPUARTLINK_PIN_{RX,TX})
+endif
+
+ifneq ($(LIBMSPUARTLINK_PIN_RX),)
+override CFLAGS += $(call gpio_pin,LIBMSPUARTLINK_PIN_RX)
+endif # LIBMSPUARTLINK_PIN_RX
+
+ifneq ($(LIBMSPUARTLINK_PIN_TX),)
+override CFLAGS += $(call gpio_pin,LIBMSPUARTLINK_PIN_TX)
+endif # LIBMSPUARTLINK_PIN_TX
+
+ifneq ($(LIBMSPUARTLINK_BAUDRATE),)
+override CFLAGS := $(CFLAGS) $(call uart_baudrate,LIBMSPUARTLINK_BAUDRATE,\
+                                    $(LIBMSPUARTLINK_BAUDRATE),$(CLOCK_FREQ_$(LIBMSPUARTLINK_CLOCK)))
+else
+$(error Undefined config variable: LIBMSPUARTLINK_BAUDRATE)
+endif # LIBMSPUARTLINK_BAUDRATE
+
+ifneq ($(LIBMSPUARTLINK_CLOCK),)
+override CFLAGS += -DLIBMSPUARTLINK_CLOCK=$(LIBMSPUARTLINK_CLOCK)
+else
+$(error Undefined confing variable: LIBMSPUARTLINK_CLOCK)
+endif

@@ -1,0 +1,19 @@
+ifeq ($(LIBIO_BACKEND),hwuart)
+override CFLAGS += -DLIBIO_BACKEND_HWUART
+else ifeq ($(LIBIO_BACKEND),swuart)
+override CFLAGS += -DLIBIO_BACKEND_SWUART
+else ifeq ($(LIBIO_BACKEND),edb)
+override CFLAGS += -DLIBIO_BACKEND_EDB
+endif # LIBIO_BACKEND
+
+ifeq ($(LIBIO_IN),1)
+override CFLAGS += -DLIBIO_IN
+endif
+
+ifeq ($(LIBIO_OUT),1)
+override CFLAGS += -DLIBIO_OUT
+endif
+
+ifneq ($(VERBOSE),)
+override CFLAGS += -DVERBOSE=$(VERBOSE)
+endif

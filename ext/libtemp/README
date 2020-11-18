@@ -1,0 +1,4 @@
+Driver for analog temperature sensors.
+
+Supported devices:
+TMP36

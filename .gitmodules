@@ -1,0 +1,36 @@
+[submodule "ext/maker"]
+	path = ext/maker
+	url = https://github.com/CMUAbstract/maker
+[submodule "ext/libmsp"]
+	path = ext/libmsp
+	url = https://github.com/CMUAbstract/libmsp
+[submodule "ext/libcapybara"]
+	path = ext/libcapybara
+	url = https://github.com/CMUAbstract/libcapybara
+[submodule "ext/libio"]
+	path = ext/libio
+	url = https://github.com/CMUAbstract/libio
+[submodule "ext/libmspware"]
+	path = ext/libmspware
+	url = https://github.com/CMUAbstract/libmspware
+[submodule "ext/libmcppot"]
+	path = ext/libmcppot
+	url = https://github.com/CMUAbstract/libmcppot
+[submodule "ext/libchain"]
+	path = ext/libchain
+	url = https://github.com/CMUAbstract/libchain
+[submodule "ext/libmspuartlink"]
+	path = ext/libmspuartlink
+	url = https://github.com/CMUAbstract/libmspuartlink
+[submodule "ext/libfxl"]
+	path = ext/libfxl
+	url = https://github.com/CMUAbstract/libfxl
+[submodule "ext/libtemp"]
+	path = ext/libtemp
+	url = https://github.com/CMUAbstract/libtemp
+[submodule "ext/libmspdriver"]
+	path = ext/libmspdriver
+	url = git@github.com:CMUAbstract/libmspdriver.git
+[submodule "ext/libapds"]
+	path = ext/libapds
+	url = git@github.com:CMUAbstract/libapds.git

@@ -1,0 +1,31 @@
+//#define SAFE_BEGIN() __belowNeedsProtection()
+//#define SAFE_END() __aboveNeedsProtection()
+//void memcpy(char* dst, char* src, unsigned size);
+//#define KNOB(...) _KNOB(42, ##__VA_ARGS__, 1, 0)
+//#define _KNOB(dummy, arg, argNum, ...) KNOB ## argNum(arg)
+//#define KNOB0(...) __knob_placeholder()
+//#define KNOB1(arg) __knob(42, arg)
+//
+//int ARG() {return 0;}
+//void UPDATE(int argNum, ...) {}
+//void __belowNeedsProtection(){}
+//void __aboveNeedsProtection(){}
+//int __knob(int a, ...) {return a;}
+//int __knob_placeholder() {return 0;}
+
+int main() {
+  int* src;
+  int* dst;
+
+	SAFE_BEGIN();
+	memcpy(dst, src, KNOB(100.5));
+	UPDATE(0, ARG()+KNOB()/2);
+	UPDATE(1, ARG()+KNOB()/2);
+	SAFE_END();
+
+//	SAFE_BEGIN();
+//	memcpy(dst, src, 1000);
+//	SAFE_END();
+
+	return 0;
+}

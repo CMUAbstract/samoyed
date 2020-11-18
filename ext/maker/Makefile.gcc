@@ -1,0 +1,152 @@
+TOOLCHAIN = gcc
+
+include $(MAKER_ROOT)/Makefile.env
+include $(MAKER_ROOT)/Makefile.board
+
+PREFIX = $(TOOLCHAIN_ROOT)/bin/msp430-elf-
+CC      = $(PREFIX)gcc
+LD      = $(PREFIX)gcc
+AS      = $(PREFIX)as
+GDB     = $(PREFIX)gdb
+
+include $(MAKER_ROOT)/Makefile.version
+
+LINKER_SCRIPTS_ROOT = $(MAKER_ROOT)/linker-scripts/gcc-$(GCC_VER_MAJ)
+
+LIB_SUFFIX = a
+EXEC_SUFFIX = out
+include $(MAKER_ROOT)/Makefile.suffix
+
+COMMONFLAGS = \
+	-mmcu=$(DEVICE) \
+
+ASFLAGS = \
+	-mlarge \
+	$(COMMONFLAGS) \
+
+HWMULT ?= 1
+
+OPT_LEVEL ?= 1
+
+#ifeq ($(shell test $(GCC_VER_MAJ) -lt 6; echo $$?),0)
+#DEVICES_CSV_DIR = include
+#else # GCC_VER_MAJ >= 6
+#DEVICES_CSV_DIR = msp430-elf/include
+#endif # GCC_VER_MAJ
+DEVICES_CSV_DIR = include
+
+# We override because when this file is included from a nested build directory
+# (say, when the app or toolchain has more than one build artifact, each built
+# by its own makefile), the CFLAGS are passed via '$(MAKE) -e', with which
+# changing the value of a variable is only possible with override. It's ugly,
+# but hopefully, this is enough to make things work.
+
+override CFLAGS += \
+	$(BOARDDEFS) \
+	-O$(OPT_LEVEL) \
+	-std=c99 \
+	-w \
+	-I$(TOOLCHAIN_ROOT)/$(DEVICES_CSV_DIR) \
+	-I$(SRC_ROOT) \
+	-g \
+
+# This is for clang frontend.
+# They cannot parse this args
+EXTRACFLAGS = \
+	$(COMMONFLAGS) \
+	-minrt \
+	-mlarge \
+
+# To prevent printf() getting replaced with puts from libc instead of from our
+# I/O backend lib. Note that we used to rely on overriding puts/putchar symbols,
+# but that seems to be fragile. One day it just stopped overriding.
+override CFLAGS += -fno-builtin
+
+ifneq ($(HWMULT),1)
+override CFLAGS += -mhwmult=none
+endif
+
+# NOTE: --gc-sections is important otherwise cruft gets linked in (like,
+# open/close/read/etc syscalls from libnosys), which uses errno, which
+# prompts newlib to include 'impure_data' (~128 bytes) into .data,
+# which leads to a significant delay before main run son startup (~3ms)
+# spent on initializing this data. NOTE: --gc-sections only fixes for
+# TI GCC v5.00 (gcc 6.2.1), does not fix the issue with v3.00 (v4.9.1).
+ifeq ($(SYSTEM), jit)
+override LFLAGS += \
+	-Wl,--gc-sections \
+	-T $(LINKER_SCRIPTS_ROOT)/$(DEVICE)_framonly.ld \
+	-L $(TOOLCHAIN_ROOT)/include\
+  -mlarge \
+
+else
+override LFLAGS += \
+	-Wl,--gc-sections \
+	-T $(LINKER_SCRIPTS_ROOT)/$(DEVICE).ld \
+	-L $(TOOLCHAIN_ROOT)/include\
+  -mlarge \
+
+endif
+
+VPATH = $(SRC_ROOT)
+
+all: $(BIN)
+
+-include $(OBJECTS:.o=.d)
+
+# disable implicit rule that for some reason overrides the chained rules below
+#.SUFFIXES:
+
+%.o: %.c
+	mkdir -p "./$(shell dirname $@)"
+	$(CC) -c -MD $(CFLAGS) $(EXTRACFLAGS) $< -o $@
+
+%.S: %.c
+	mkdir -p "./$(shell dirname $@)"
+#	cp ./src/$2_$1.c ./bak/$2_$1_bak.c
+	../../ext/jit/JitFrontend/bld/jit_frontend $< -- $(CFLAGS) --target=msp430 -I $(TOOLCHAIN_ROOT)/lib/gcc/msp430-elf/6.4.0/include -I $(TOOLCHAIN_ROOT)/msp430-elf/include -fheinous-gnu-extensions
+	pwd
+	$(CC) -S -c -MD $(CFLAGS) $(EXTRACFLAGS) $< -o $@
+	python3 ../../ext/jit/python_script/mainPatcher.py $@
+
+#%.o: %.S
+#	mkdir -p "./$(shell dirname $@)"
+#	$(AS) $(ASFLAGS) $< -o $@
+
+#%.out: $(OBJECTS)
+#	$(LD) $(LFLAGS) $(OBJECTS) $(LIBS) -o $(BIN)
+%.out: %.S
+	$(LD) $(COMMONFLAGS) $(LFLAGS) $< $(LIBS) -o $(BIN)
+
+
+%.a: $(OBJECTS)
+	$(AR) rcs $@ $^
+
+clean:
+	rm -f $(OBJECTS) $(OBJECTS:.o=.d) $(BIN) *.S
+
+debug: $(BIN)
+	$(GDB) $(BIN)
+
+# disable implicit rules, for personal sanity
+.SUFFIXES:
+
+ifeq ($(TARGET_TYPE),exec)
+include $(MAKER_ROOT)/Makefile.program
+endif
+
+ifeq ($(TARGET_TYPE),exec)
+define add-lib
+LIBS += -l$(subst lib,,$(1))
+override LFLAGS += -L$$(DEP_LIB_DIR_$(1))
+endef
+else # TARGET_TYPE
+define add-lib
+# nothing
+endef
+endif
+
+include $(MAKER_ROOT)/Makefile.dep
+
+# do not remove intermediates
+.SECONDARY:

@@ -1,0 +1,27 @@
+# This is the Makefile for using the DINO toolchain to build an app.
+# Include it from a bld/dino directory in your app (built with 'maker').
+
+include $(MAKER_ROOT)/Makefile.env
+
+#LOCAL_CFLAGS += -DALPACA
+LOCAL_CFLAGS += -DJIT
+
+ALPACA_LIB = 
+
+%.chain.bc : %.bc
+	$(OPT) -debug -stats \
+	  -o $@ $<
+
+#LINK_OBJECTS = $(OBJECTS:.o=.chain.bc)
+
+override DEPS += \
+	libjit \
+
+DEP_ROOT_libjit = $(JIT_ROOT)/JitRuntime
+
+#override CLFAGS += $(LOCAL_CFLAGS) \
+
+include $(MAKER_ROOT)/Makefile.gcc
+
+# do not remove any intermediate artifacts
+.SECONDARY:
