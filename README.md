@@ -4,6 +4,7 @@
 
 1. Compile the Samoyed frontend written as an LLVM frontend.
 > cd ./ext/jit/JitFrontend/bld/
+
 > make
 
 ## Compile code
